@@ -123,7 +123,7 @@ export default function JoinQueue() {
         {/* Footer note */}
         <footer className="mt-8 text-center">
           <p className="text-[10px] text-on-surface-variant/50 font-medium uppercase tracking-[0.08em]">
-            Você só pode entrar uma vez por vez.
+            Cada pessoa pode estar em apenas uma fila por vez.
           </p>
         </footer>
       </main>
