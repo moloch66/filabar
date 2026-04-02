@@ -1,11 +1,16 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueue } from '../hooks/useQueue'
 import { WaitingCard, CalledCard } from '../components/QueueCard'
 import { getWaitingSince } from '../utils/localStorage'
 
+type MobileTab = 'waiting' | 'called' | 'attended'
+
 export default function AdminPanel() {
   const navigate = useNavigate()
   const { waiting, called, attended, callNext, markAttended, clearAll } = useQueue()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [mobileTab, setMobileTab] = useState<MobileTab>('waiting')
 
   function handleClearAll() {
     if (window.confirm('Limpar toda a fila? Esta ação não pode ser desfeita.')) {
@@ -16,15 +21,45 @@ export default function AdminPanel() {
   return (
     <div className="h-screen overflow-hidden flex bg-background">
 
-      {/* Sidebar */}
-      <aside className="w-72 bg-surface-container-low flex flex-col border-r border-outline-variant/10 z-20 flex-shrink-0">
+      {/* ── Mobile overlay ── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar ── */}
+      <aside
+        className={`
+          fixed md:relative inset-y-0 left-0 z-40
+          w-72 bg-surface-container-low flex flex-col border-r border-outline-variant/10 flex-shrink-0
+          transition-transform duration-300
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}
+      >
         <div className="p-8">
+          {/* Logo + close button (mobile) */}
           <div className="flex items-center gap-2 mb-12">
-            <span className="material-symbols-outlined text-primary text-3xl">local_bar</span>
-            <span className="font-brand font-black italic text-2xl tracking-tighter text-primary drop-shadow-[0_0_10px_rgba(255,159,77,0.4)]">
-              FILABAR
-            </span>
+            <button
+              onClick={() => navigate('/fila')}
+              className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+              title="Ver posição na fila"
+            >
+              <span className="material-symbols-outlined text-primary text-3xl">local_bar</span>
+              <span className="font-brand font-black italic text-2xl tracking-tighter text-primary drop-shadow-[0_0_10px_rgba(255,159,77,0.4)]">
+                FILABAR
+              </span>
+            </button>
+            <button
+              className="ml-auto md:hidden text-on-surface-variant hover:text-on-surface"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
+
           <nav className="space-y-2">
             <div className="flex items-center gap-4 px-4 py-3 bg-surface-container-highest text-primary rounded-xl shadow-neon-primary cursor-default">
               <span
@@ -37,6 +72,15 @@ export default function AdminPanel() {
                 Fila ao vivo
               </span>
             </div>
+            <div
+              className="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all rounded-xl cursor-pointer"
+              onClick={() => navigate('/admin/mesas')}
+            >
+              <span className="material-symbols-outlined">table_restaurant</span>
+              <span className="font-headline text-sm font-bold uppercase tracking-widest">
+                Mesas
+              </span>
+            </div>
             <div className="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all rounded-xl cursor-pointer">
               <span className="material-symbols-outlined">history</span>
               <span className="font-headline text-sm font-bold uppercase tracking-widest">
@@ -45,6 +89,7 @@ export default function AdminPanel() {
             </div>
           </nav>
         </div>
+
         <div className="mt-auto p-8 border-t border-outline-variant/5">
           <div className="flex items-center gap-3 bg-surface-container-high p-3 rounded-2xl">
             <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
@@ -61,18 +106,40 @@ export default function AdminPanel() {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      {/* ── Main content ── */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* Top bar */}
-        <header className="h-20 bg-surface/60 backdrop-blur-[20px] flex items-center justify-between px-10 sticky top-0 z-10 border-b border-outline-variant/5">
-          <div className="flex items-center gap-4">
-            <nav className="flex items-center gap-2 text-xs font-label uppercase tracking-widest text-on-surface-variant">
+        {/* ── Top bar ── */}
+        <header className="h-16 md:h-20 bg-surface/60 backdrop-blur-[20px] flex items-center justify-between px-4 md:px-10 sticky top-0 z-10 border-b border-outline-variant/5 gap-3">
+
+          {/* Left: hamburger (mobile) + breadcrumb (desktop) */}
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Hamburger — mobile only */}
+            <button
+              className="md:hidden text-on-surface-variant hover:text-on-surface flex-shrink-0"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+
+            {/* Logo — mobile only (no sidebar visible) */}
+            <button
+              onClick={() => navigate('/fila')}
+              className="md:hidden font-brand font-black italic text-lg tracking-tighter text-primary hover:opacity-70 transition-opacity"
+              title="Ver posição na fila"
+            >
+              FILABAR
+            </button>
+
+            {/* Breadcrumb — desktop only */}
+            <nav className="hidden md:flex items-center gap-2 text-xs font-label uppercase tracking-widest text-on-surface-variant">
               <span>Painel</span>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               <span className="text-on-surface">Fila ao vivo</span>
             </nav>
-            <div className="ml-6 px-3 py-1 bg-primary/10 rounded-full flex items-center gap-2">
+
+            {/* Live indicator */}
+            <div className="hidden sm:flex ml-0 md:ml-6 px-3 py-1 bg-primary/10 rounded-full items-center gap-2 flex-shrink-0">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
@@ -82,17 +149,22 @@ export default function AdminPanel() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+
+          {/* Right: action buttons */}
+          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+            {/* "Limpar fila" — hidden on very small screens */}
             <button
               onClick={handleClearAll}
-              className="border border-outline-variant/20 text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-xl font-headline font-bold text-[10px] uppercase tracking-widest transition-colors"
+              className="hidden sm:block border border-outline-variant/20 text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-xl font-headline font-bold text-[10px] uppercase tracking-widest transition-colors"
             >
               Limpar fila
             </button>
+
+            {/* "Chamar próximo" — icon only on mobile, full on desktop */}
             <button
               onClick={callNext}
               disabled={waiting.length === 0}
-              className="bg-gradient-to-r from-primary to-primary-container text-on-primary-container px-6 py-2.5 rounded-full font-headline font-bold text-sm flex items-center gap-2 shadow-neon-primary-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="bg-gradient-to-r from-primary to-primary-container text-on-primary-container px-3 md:px-6 py-2 md:py-2.5 rounded-full font-headline font-bold text-sm flex items-center gap-2 shadow-neon-primary-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <span
                 className="material-symbols-outlined"
@@ -100,8 +172,9 @@ export default function AdminPanel() {
               >
                 campaign
               </span>
-              Chamar próximo
+              <span className="hidden sm:inline">Chamar próximo</span>
             </button>
+
             <button
               onClick={() => navigate('/')}
               className="text-on-surface-variant hover:text-on-surface transition-colors"
@@ -112,8 +185,131 @@ export default function AdminPanel() {
           </div>
         </header>
 
-        {/* 3-column grid */}
-        <section className="flex-1 p-8 grid grid-cols-3 gap-8 overflow-hidden">
+        {/* ── Mobile: tab switcher ── */}
+        <div className="md:hidden flex border-b border-outline-variant/10 bg-surface/60 backdrop-blur-sm">
+          <button
+            onClick={() => setMobileTab('waiting')}
+            className={`flex-1 py-3 text-[11px] font-bold uppercase tracking-widest font-headline transition-colors flex flex-col items-center gap-0.5 ${
+              mobileTab === 'waiting'
+                ? 'text-on-surface border-b-2 border-primary'
+                : 'text-on-surface-variant'
+            }`}
+          >
+            Aguardando
+            <span className={`text-[10px] px-2 py-0.5 rounded-md font-label ${
+              mobileTab === 'waiting' ? 'bg-primary/20 text-primary' : 'bg-surface-container-high text-on-surface-variant'
+            }`}>
+              {String(waiting.length).padStart(2, '0')}
+            </span>
+          </button>
+          <button
+            onClick={() => setMobileTab('called')}
+            className={`flex-1 py-3 text-[11px] font-bold uppercase tracking-widest font-headline transition-colors flex flex-col items-center gap-0.5 ${
+              mobileTab === 'called'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-on-surface-variant'
+            }`}
+          >
+            Chamados
+            <span className={`text-[10px] px-2 py-0.5 rounded-md font-label ${
+              mobileTab === 'called' ? 'bg-primary/20 text-primary' : 'bg-surface-container-high text-on-surface-variant'
+            }`}>
+              {String(called.length).padStart(2, '0')}
+            </span>
+          </button>
+          <button
+            onClick={() => setMobileTab('attended')}
+            className={`flex-1 py-3 text-[11px] font-bold uppercase tracking-widest font-headline transition-colors flex flex-col items-center gap-0.5 ${
+              mobileTab === 'attended'
+                ? 'text-on-surface border-b-2 border-primary'
+                : 'text-on-surface-variant'
+            }`}
+          >
+            Atendidos
+            <span className={`text-[10px] px-2 py-0.5 rounded-md font-label ${
+              mobileTab === 'attended' ? 'bg-surface-container-high text-on-surface' : 'bg-surface-container-high text-on-surface-variant'
+            }`}>
+              {attended.length}
+            </span>
+          </button>
+        </div>
+
+        {/* ── Mobile: single-column content (tabs) ── */}
+        <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+
+          {/* Waiting tab */}
+          {mobileTab === 'waiting' && (
+            <>
+              {waiting.length === 0 && (
+                <p className="text-on-surface-variant/40 text-sm text-center pt-8 font-label uppercase tracking-widest">
+                  Fila vazia
+                </p>
+              )}
+              {waiting.map((entry) => (
+                <WaitingCard key={entry.id} entry={entry} />
+              ))}
+            </>
+          )}
+
+          {/* Called tab */}
+          {mobileTab === 'called' && (
+            <div className="bg-surface-container-low rounded-[2rem] p-4 border border-primary/5 space-y-4">
+              {called.length === 0 && (
+                <p className="text-on-surface-variant/40 text-sm text-center pt-8 font-label uppercase tracking-widest">
+                  Nenhum chamado
+                </p>
+              )}
+              {called.map((entry) => (
+                <CalledCard
+                  key={entry.id}
+                  entry={entry}
+                  onMarkAttended={markAttended}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Attended tab */}
+          {mobileTab === 'attended' && (
+            <div className="opacity-70 space-y-3">
+              {attended.length === 0 && (
+                <p className="text-on-surface-variant/40 text-sm text-center pt-8 font-label uppercase tracking-widest">
+                  Nenhum atendido
+                </p>
+              )}
+              {attended.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between border border-outline-variant/5"
+                >
+                  <div>
+                    <p className="font-headline font-bold text-sm text-on-surface">{entry.name}</p>
+                    <p className="text-[10px] text-on-surface-variant font-label uppercase tracking-widest">
+                      {entry.partySize} PAX
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-label text-on-surface-variant">ESPEROU</p>
+                    <p className="text-xs font-bold font-headline">{getWaitingSince(entry.joinedAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Mobile: "Limpar fila" button at bottom */}
+          <div className="pt-4">
+            <button
+              onClick={handleClearAll}
+              className="w-full border border-outline-variant/20 text-on-surface-variant hover:text-on-surface py-3 rounded-xl font-headline font-bold text-[10px] uppercase tracking-widest transition-colors"
+            >
+              Limpar fila
+            </button>
+          </div>
+        </div>
+
+        {/* ── Desktop: 3-column grid ── */}
+        <section className="hidden md:grid flex-1 p-8 grid-cols-3 gap-8 overflow-hidden">
 
           {/* Column 1 — Aguardando */}
           <div className="flex flex-col min-h-0">
@@ -201,20 +397,4 @@ export default function AdminPanel() {
                 >
                   <div>
                     <p className="font-headline font-bold text-sm text-on-surface">{entry.name}</p>
-                    <p className="text-[10px] text-on-surface-variant font-label uppercase tracking-widest">
-                      {entry.partySize} PAX
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-label text-on-surface-variant">ESPEROU</p>
-                    <p className="text-xs font-bold font-headline">{getWaitingSince(entry.joinedAt)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
-  )
-}
+                    <p className="text-[10px] text-on-surface-variant font-label uppercase tracking-w
